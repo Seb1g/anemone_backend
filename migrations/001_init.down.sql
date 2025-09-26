@@ -1,2 +1,4 @@
 DROP TABLE IF EXISTS pages;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS notes_folder;
+DROP TABLE IF EXISTS refresh_tokens;

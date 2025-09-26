@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	_ "github.com/lib/pq"
-	// "fmt"
 )
 
 func Database_conn () (*sql.DB, error) {
@@ -25,20 +24,5 @@ func Database_conn () (*sql.DB, error) {
 		return nil, error_db_connect
 	};
 
-	// todo: сделать автодобавление таблиц
-	// _, error_tables_creating := db.Exec(`
-	// CREATE TABLE IF NOT EXISTS notes (
-	// id SERIAL PRIMARY KEY,
-	// group VARCHAR(255),
-	// title VARCHAR(255) NOT NULL,
-	// note TEXT
-	// )
-	// `);
-
-	// if error_tables_creating != nil {
-	// 	log.Fatalf("Error begin create tables: %v", error_tables_creating);
-	// };
-	
-	// fmt.Println("Tables is created");
 	return db, nil
 };

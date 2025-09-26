@@ -10,6 +10,7 @@
 
 /vendor/
 .env 
+main
 
 .vscode/
 
