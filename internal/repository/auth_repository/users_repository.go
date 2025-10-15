@@ -2,15 +2,15 @@ package auth_repository;
 
 import (
 	"anemone_notes/internal/model/auth_model"
+	"github.com/jmoiron/sqlx"
 	"context"
-	"database/sql"
 )
 
 type UserRepo struct {
-	DB *sql.DB
+	DB *sqlx.DB
 }
 
-func NewUserRepo(db *sql.DB) *UserRepo {
+func NewUserRepo(db *sqlx.DB) *UserRepo {
 	return &UserRepo{DB: db}
 }
 

@@ -4,15 +4,16 @@ import (
 	"anemone_notes/internal/model/notes_model"
 	"context"
 	"database/sql"
-	"github.com/lib/pq"
 	"errors"
+	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type PageRepo struct {
-	DB *sql.DB
+	DB *sqlx.DB
 }
 
-func NewPageRepo(db *sql.DB) *PageRepo {
+func NewPageRepo(db *sqlx.DB) *PageRepo {
 	return &PageRepo{DB: db}
 }
 
@@ -98,7 +99,7 @@ func (r *PageRepo) GetAllNotesFromFolder(ctx context.Context, id int) ([]*notes_
 	var notes []*notes_model.Page
 	for rows.Next() {
 		var p notes_model.Page
-		if err:= rows.Scan(&p.ID, &p.UserID, &p.Title, &p.Content, &p.IsDeleted, &p.FolderID, &p.UpdatedAt, &p.CreatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.UserID, &p.Title, &p.Content, &p.IsDeleted, &p.FolderID, &p.UpdatedAt, &p.CreatedAt); err != nil {
 			return nil, err
 		}
 		notes = append(notes, &p)
@@ -106,7 +107,7 @@ func (r *PageRepo) GetAllNotesFromFolder(ctx context.Context, id int) ([]*notes_
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	
+
 	return notes, nil
 }
 
@@ -150,7 +151,7 @@ func (r *PageRepo) UnmarkDeletedNote(ctx context.Context, noteID int) error {
 	return nil
 }
 
-func (r *PageRepo) MarkDeletedMoreNotes(ctx context.Context, noteIDs[]int) error {
+func (r *PageRepo) MarkDeletedMoreNotes(ctx context.Context, noteIDs []int) error {
 	q := `UPDATE pages SET is_deleted=true, updated_at=NOW() WHERE id=ANY($1);`
 	_, err := r.DB.ExecContext(ctx, q, pq.Array(noteIDs))
 	if err != nil {
@@ -159,7 +160,7 @@ func (r *PageRepo) MarkDeletedMoreNotes(ctx context.Context, noteIDs[]int) error
 	return nil
 }
 
-func (r *PageRepo) UnmarkDeletedMoreNotes(ctx context.Context, noteIDs[]int) error {
+func (r *PageRepo) UnmarkDeletedMoreNotes(ctx context.Context, noteIDs []int) error {
 	q := `UPDATE pages SET is_deleted=false, updated_at=NOW() WHERE id=ANY($1);`
 	_, err := r.DB.ExecContext(ctx, q, pq.Array(noteIDs))
 	if err != nil {

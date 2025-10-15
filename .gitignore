@@ -13,6 +13,7 @@
 main
 
 .vscode/
+.idea/
 
 /tmp/
 /log/

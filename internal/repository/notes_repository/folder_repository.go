@@ -3,14 +3,14 @@ package notes_repository
 import (
 	"anemone_notes/internal/model/notes_model"
 	"context"
-	"database/sql"
+	"github.com/jmoiron/sqlx"
 )
 
 type FolderRepo struct {
-	DB *sql.DB
+	DB *sqlx.DB
 }
 
-func NewFolderRepo(db *sql.DB) *FolderRepo {
+func NewFolderRepo(db *sqlx.DB) *FolderRepo {
 	return &FolderRepo{DB: db}
 }
 

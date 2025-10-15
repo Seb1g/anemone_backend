@@ -2,15 +2,15 @@ package auth_repository;
 
 import (
     "context"
-    "database/sql"
+    "github.com/jmoiron/sqlx"
     "time"
 )
 
 type RefreshRepo struct {
-    DB *sql.DB
+    DB *sqlx.DB
 }
 
-func NewRefreshRepo(db *sql.DB) *RefreshRepo {
+func NewRefreshRepo(db *sqlx.DB) *RefreshRepo {
     return &RefreshRepo{DB: db}
 }
 
