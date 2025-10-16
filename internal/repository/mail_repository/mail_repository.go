@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type MailRepository struct {
@@ -36,8 +37,14 @@ func (r *MailRepository) FindAddressByString(address string) (*mail_model.TempAd
 
 func (r *MailRepository) SaveEmail(email *mail_model.Email) error {
 	query := `INSERT INTO emails (address_id, sender, recipients, subject, body)
-              VALUES (:address_id, :sender, :recipients, :subject, :body)`
-	_, err := r.db.NamedExec(query, email)
+              VALUES ($1, $2, $3, $4, $5)`
+	_, err := r.db.Exec(query,
+		email.AddressID,
+		email.Sender,
+		pq.Array(email.Recipients),
+		email.Subject,
+		email.Body,
+	)
 	return err
 }
 

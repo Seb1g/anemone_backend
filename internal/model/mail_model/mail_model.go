@@ -1,6 +1,9 @@
 package mail_model
 
-import "time"
+import (
+	"time"
+	"github.com/lib/pq" 
+)
 
 type TempAddress struct {
 	ID        int       `db:"id" json:"-"`
@@ -12,7 +15,7 @@ type Email struct {
 	ID         int       `db:"id" json:"id"`
 	AddressID  int       `db:"address_id" json:"-"`
 	Sender     string    `db:"sender" json:"sender"`
-	Recipients []string  `db:"recipients" json:"recipients"`
+	Recipients pq.StringArray  `db:"recipients" json:"recipients"`
 	Subject    string    `db:"subject" json:"subject"`
 	Body       string    `db:"body" json:"body"`
 	ReceivedAt time.Time `db:"received_at" json:"received_at"`

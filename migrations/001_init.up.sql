@@ -1,4 +1,4 @@
--- Anemone Notion
+-- Anemone Holding
 -- Создание таблицы пользователей
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
