@@ -8,11 +8,15 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string
-	HTTPPort    string
-	SMTPPort    string
-	JWTSecret   string
-	DomainName  string
+	DatabaseURL   string
+	HTTPPort      string
+	SMTPPort      string
+	JWTSecret     string
+	DomainName    string
+	CorsDev			  string
+	CorsProd 	 	  string
+	AccessSecret  string
+	RefreshSecret string
 }
 
 func Load() *Config {
@@ -21,11 +25,15 @@ func Load() *Config {
 	}
 
 	return &Config{
-		DatabaseURL: getEnv("DATABASE_URL", ""),
-		HTTPPort:    getEnv("HTTP_PORT", "8080"),
-		SMTPPort:    getEnv("SMTP_PORT", "1025"),
-		JWTSecret:   getEnv("JWT_SECRET", "default_secret"),
-		DomainName:  getEnv("DOMAIN_NAME", "localhost"),
+		DatabaseURL:   getEnv("DATABASE_URL", ""),
+		HTTPPort:      getEnv("HTTP_PORT", "8080"),
+		SMTPPort:      getEnv("SMTP_PORT", "1025"),
+		JWTSecret:   	 getEnv("JWT_SECRET", "default_secret"),
+		DomainName:    getEnv("DOMAIN_NAME", "localhost"),
+		CorsDev:		   getEnv("CORS_DEV", ""),
+		CorsProd:		   getEnv("CORS_PROD", ""),
+		AccessSecret:  getEnv("ACCESS_SECRET", ""),
+		RefreshSecret: getEnv("REFRESH_SECRET", ""),
 	}
 }
 

@@ -15,10 +15,26 @@ import (
 	"anemone_notes/internal/smtp_server"
 	"anemone_notes/internal/utils"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"sync"
 )
+
+func setupCORS(router http.Handler) http.Handler {
+	cfg := config.Load()
+
+	c := cors.New(cors.Options{
+		// AllowedOrigins: []string{cfg.CorsDev}, // FOR DEV
+		AllowedOrigins: []string{cfg.CorsProd}, // FOR PROD
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders: []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+		Debug: true,
+	})
+	
+	return c.Handler(router)
+}
 
 func main() {
 	cfg := config.Load()
@@ -56,6 +72,8 @@ func main() {
 	folderHandler.FolderRoutes(r)
 	mailHandler.RegisterRoutes(r)
 
+	handlerWithCORS := setupCORS(r)
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -68,7 +86,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		log.Printf("INFO: Starting HTTP server on port %s", cfg.HTTPPort)
-		if err := http.ListenAndServe(":"+cfg.HTTPPort, r); err != nil {
+		if err := http.ListenAndServe(":"+cfg.HTTPPort, handlerWithCORS); err != nil {
 			log.Fatalf("FATAL: failed to start HTTP server: %v", err)
 		}
 	}()

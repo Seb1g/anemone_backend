@@ -3,6 +3,7 @@ package auth_services
 import (
 	"anemone_notes/internal/model/auth_model"
 	"anemone_notes/internal/repository/auth_repository"
+	"anemone_notes/internal/config"
 	"context"
 	"errors"
 	"time"
@@ -11,8 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var accessKey = []byte("access-secret")
-var refreshKey = []byte("refresh-secret")
+var cfg = config.Load()
 
 type AuthService struct {
 	Users   *auth_repository.UserRepo
@@ -35,13 +35,13 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (*au
 
 // ─── генерация токенов ─────────────────────────────────────────
 func (s *AuthService) generateTokens(ctx context.Context, u *auth_model.User) (string, string, error) {
-	// access (15 минут)
+	// access (60 минут)
 	accessClaims := jwt.MapClaims{
 		"user_id": u.ID,
 		"exp":     time.Now().Add(60 * time.Minute).Unix(),
 	}
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
-	accessToken, err := at.SignedString(accessKey)
+	accessToken, err := at.SignedString(cfg.AccessSecret)
 	if err != nil {
 		return "", "", err
 	}
@@ -52,7 +52,7 @@ func (s *AuthService) generateTokens(ctx context.Context, u *auth_model.User) (s
 		"exp":     time.Now().Add(7 * 24 * time.Hour).Unix(),
 	}
 	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshToken, err := rt.SignedString(refreshKey)
+	refreshToken, err := rt.SignedString(cfg.RefreshSecret)
 	if err != nil {
 		return "", "", err
 	}
@@ -88,7 +88,7 @@ func (s *AuthService) ResetPassword(ctx context.Context, email, newPassword stri
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (string, error) {
 	claims := jwt.MapClaims{}
 	token, err := jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
-		return refreshKey, nil
+		return cfg.RefreshSecret, nil
 	})
 	if err != nil || !token.Valid {
 		return "", errors.New("invalid refresh token")
@@ -107,13 +107,13 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (st
 		"exp":     time.Now().Add(15 * time.Minute).Unix(),
 	}
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
-	return at.SignedString(accessKey)
+	return at.SignedString(cfg.AccessSecret)
 }
 
 func (s *AuthService) ParseAccessToken(tokenStr string) (int, error) {
     claims := jwt.MapClaims{}
     token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-        return accessKey, nil
+        return cfg.AccessSecret, nil
     })
     if err != nil || !token.Valid {
         return 0, errors.New("invalid token")
