@@ -4,11 +4,18 @@ import (
 	"anemone_notes/internal/config"
 	"anemone_notes/internal/model/mail_model"
 	"anemone_notes/internal/repository/mail_repository"
+	"encoding/base64"
 	"errors"
 	"github.com/emersion/go-smtp"
+	"github.com/microcosm-cc/bluemonday"
 	"io"
 	"log"
+	"maps"
+	"mime"
+	"mime/multipart"
+	"mime/quotedprintable"
 	"net/mail"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -79,6 +86,78 @@ func (s *Session) Rcpt(to string, opts *smtp.RcptOptions) error {
 	return nil
 }
 
+func applyDecoding(r io.Reader, headers mail.Header) io.Reader {
+	cte := strings.ToLower(headers.Get("Content-Transfer-Encoding"))
+
+	switch cte {
+	case "base64":
+		// Декодер Base64
+		return base64.NewDecoder(base64.StdEncoding, r)
+	case "quoted-printable":
+		// Декодер Quoted-Printable
+		return quotedprintable.NewReader(r)
+	default:
+		// Неизвестная или 7bit/8bit (без кодирования)
+		return r
+	}
+}
+
+func extractAndSanitizeHTML(msg *mail.Message) (string, error) {
+	p := bluemonday.UGCPolicy()
+
+	styleRe := regexp.MustCompile(`^[a-zA-Z0-9\s\:\;\#\(\)\-\,\.%]*$`)
+	p.AllowAttrs("style").Matching(styleRe).OnElements("p", "span", "div", "td", "th")
+
+	contentType := msg.Header.Get("Content-Type")
+	mediaType, params, err := mime.ParseMediaType(contentType)
+
+	bodyReader := applyDecoding(msg.Body, msg.Header)
+
+	if err != nil || (!strings.HasPrefix(mediaType, "multipart/") && mediaType != "text/html") {
+		bodyBytes, _ := io.ReadAll(bodyReader)
+		return p.Sanitize(string(bodyBytes)), nil
+	}
+
+	if strings.HasPrefix(mediaType, "multipart/") {
+		mr := multipart.NewReader(bodyReader, params["boundary"])
+		for {
+			part, err := mr.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Printf("Error reading MIME part: %v", err)
+				continue
+			}
+
+			mailHeader := make(mail.Header)
+			maps.Copy(mailHeader, part.Header)
+
+			partMsg := &mail.Message{
+				Header: mailHeader,
+				Body:   part,
+			}
+
+			html, err := extractAndSanitizeHTML(partMsg)
+			if err == nil && html != "" {
+				return html, nil
+			}
+		}
+	}
+
+	if mediaType == "text/html" {
+		bodyBytes, err := io.ReadAll(bodyReader)
+		if err != nil {
+			return "", err
+		}
+
+		cleanHTML := p.Sanitize(string(bodyBytes))
+		return cleanHTML, nil
+	}
+
+	return "", nil
+}
+
 func (s *Session) Data(r io.Reader) error {
 	if len(s.rcptTo) == 0 {
 		return errors.New("no recipients")
@@ -90,10 +169,10 @@ func (s *Session) Data(r io.Reader) error {
 		return err
 	}
 
-	bodyBytes, err := io.ReadAll(msg.Body)
+	cleanedHTMLBody, err := extractAndSanitizeHTML(msg)
 	if err != nil {
-		log.Printf("SMTP DATA: could not read body: %v", err)
-		return err
+		log.Printf("SMTP DATA: could not extract/sanitize HTML: %v", err)
+		return errors.New("failed to process message body")
 	}
 
 	subject := msg.Header.Get("Subject")
@@ -103,7 +182,7 @@ func (s *Session) Data(r io.Reader) error {
 		Sender:     s.from,
 		Recipients: s.rcptTo,
 		Subject:    subject,
-		Body:       string(bodyBytes),
+		Body:       cleanedHTMLBody,
 	}
 
 	if err := s.repo.SaveEmail(newEmail); err != nil {

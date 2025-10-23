@@ -11,6 +11,7 @@
 /vendor/
 .env 
 main
+anemone_holding
 
 .vscode/
 .idea/
